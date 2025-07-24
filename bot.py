@@ -3,21 +3,23 @@ import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from typing import Dict, Optional, Tuple
+import urllib.parse
 
 class MHMAI:
     def __init__(self):
-        self.API_URL = 'https://api.paxsenix.biz.id/v1/chat/completions'
+        self.API_URL = 'https://api.paxsenix.biz.id/ai/deepseek'
         self.COORDINATES_API_URL = 'https://api.paxsenix.biz.id/v1/gpt-3.5-turbo/chat/'
         self.headers = {
             'Authorization': f'Bearer sk-paxsenix-45-dpDQ7eXYt8esnLxDyjFLV0X1XOWWrV218mhTqMEcdJW1J',
             'Content-Type': 'application/json'
         }
-        self.model = "gpt-4o"
+        
         self.watermark = " [This response is fully powered by M.H.M AI]"
         self.conversation_history = []
         self.developer_info = "The developer of this AI is a Grade 11 student from Myanmar."
         self.weather_api_url = "https://weather-forcast.moewaiyankyaw353.workers.dev/"
         self.setup_system_prompt()
+        self.timeout = 60000  # 6000ms timeout
     
     def setup_system_prompt(self):
         system_prompt = {
@@ -35,7 +37,6 @@ class MHMAI:
     def get_location_coordinates(self, location_name: str) -> Optional[Tuple[float, float]]:
         """Get coordinates for locations in Myanmar"""
         try:
-            import urllib.parse
             text = (
                 f"Find the precise latitude and longitude coordinates for '{location_name}' in Myanmar. "
                 "Respond ONLY with the coordinates in the format 'latitude,longitude' with exactly 6 decimal places. "
@@ -45,7 +46,7 @@ class MHMAI:
             encoded_text = urllib.parse.quote(text)
             url = f"{self.COORDINATES_API_URL}?text={encoded_text}"
             
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=self.timeout/1000)  # Convert to seconds
             response.raise_for_status()
             
             result = response.json()
@@ -68,7 +69,7 @@ class MHMAI:
         """Fetch weather data from API"""
         try:
             url = f"{self.weather_api_url}?lat={lat}&lon={lon}&days={days}"
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=self.timeout/1000)  # Convert to seconds
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -123,20 +124,19 @@ class MHMAI:
         self.conversation_history.append({"role": "user", "content": user_input})
         
         try:
+            encoded_input = urllib.parse.quote(user_input)
+            api_url = f"{self.API_URL}?text={encoded_input}&thinking_enabled=false&search_enabled=false"
+            
             response = requests.post(
-                self.API_URL,
-                json={
-                    "model": self.model,
-                    "messages": self.conversation_history,
-                    "temperature": 0.7
-                },
+                api_url,
                 headers=self.headers,
-                timeout=30
+                timeout=self.timeout/1000  # Convert to seconds
             )
             response.raise_for_status()
             
-            if response.json().get('choices'):
-                ai_response = response.json()['choices'][0]['message']['content']
+            response_data = response.json()
+            if response_data.get('ok', False):
+                ai_response = response_data.get('message', '')
                 self.conversation_history.append({"role": "assistant", "content": ai_response})
                 
                 # Replace branding
