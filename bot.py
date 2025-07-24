@@ -1,23 +1,22 @@
-import os
 import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from typing import Dict, Optional, Tuple
-import urllib.parse
 
 class MHMAI:
     def __init__(self):
-        self.API_URL = 'https://api.paxsenix.biz.id/ai/deepseek'
+        self.API_KEY = 'sk-paxsenix-45-dpDQ7eXYt8esnLxDyjFLV0X1XOWWrV218mhTqMEcdJW1J'
+        self.API_URL = 'https://api.paxsenix.biz.id/v1/chat/completions'
         self.COORDINATES_API_URL = 'https://api.paxsenix.biz.id/v1/gpt-3.5-turbo/chat/'
         self.headers = {
-            'Authorization': f'Bearer sk-paxsenix-45-dpDQ7eXYt8esnLxDyjFLV0X1XOWWrV218mhTqMEcdJW1J',
+            'Authorization': f'Bearer {self.API_KEY}',
             'Content-Type': 'application/json'
         }
+        self.model = "gpt-4o"
         self.watermark = " [This response is fully powered by M.H.M AI]"
         self.conversation_history = []
-        self.developer_info = "The developer of this AI is a Grade 11 student from Myanmar."
+        self.developer_info = "The developer of this AI is a Grade 11 student from Myanmar. "
         self.weather_api_url = "https://weather-forcast.moewaiyankyaw353.workers.dev/"
-        self.timeout = 6000  # 6 seconds timeout
         self.setup_system_prompt()
     
     def setup_system_prompt(self):
@@ -34,41 +33,51 @@ class MHMAI:
         self.conversation_history.append(system_prompt)
     
     def get_location_coordinates(self, location_name: str) -> Optional[Tuple[float, float]]:
-        """Get coordinates for locations in Myanmar"""
+        """Use the coordinates API to find latitude and longitude for a location in Myanmar."""
         try:
+            # Prepare the API request
             text = (
                 f"Find the precise latitude and longitude coordinates for '{location_name}' in Myanmar. "
                 "Respond ONLY with the coordinates in the format 'latitude,longitude' with exactly 6 decimal places. "
                 "Example: '16.840939,96.173527' for Yangon. "
                 "If the location cannot be found or is not in Myanmar, respond with 'None'."
             )
+            
+            # URL encode the text
+            import urllib.parse
             encoded_text = urllib.parse.quote(text)
             url = f"{self.COORDINATES_API_URL}?text={encoded_text}"
             
-            response = requests.get(url, timeout=self.timeout/1000)  # Convert to seconds
+            response = requests.get(url, timeout=10)
             response.raise_for_status()
             
             result = response.json()
             if result.get('ok', False):
                 coords = result.get('message', '').strip()
+                
                 if coords.lower() == 'none':
                     return None
+                    
                 try:
                     lat, lon = map(float, coords.split(','))
-                    if 9.5 <= lat <= 28.5 and 92.0 <= lon <= 101.0:  # Myanmar coordinates range
+                    # Validate coordinates are roughly in Myanmar
+                    if 9.5 <= lat <= 28.5 and 92.0 <= lon <= 101.0:
                         return (lat, lon)
+                    return None
                 except ValueError:
-                    pass
+                    return None
+                    
             return None
+            
         except requests.exceptions.RequestException as e:
             print(f"Coordinates API error: {e}")
             return None
     
     def get_weather_data(self, lat: float, lon: float, days: int = 30) -> Optional[Dict]:
-        """Fetch weather data from API"""
+        """Fetch weather data from the API."""
         try:
             url = f"{self.weather_api_url}?lat={lat}&lon={lon}&days={days}"
-            response = requests.get(url, timeout=self.timeout/1000)  # Convert to seconds
+            response = requests.get(url, timeout=10)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -76,94 +85,154 @@ class MHMAI:
             return None
     
     def format_weather_response(self, weather_data: Dict) -> str:
-        """Format weather API response"""
+        """Format the weather API response into a readable message."""
         try:
             location = weather_data.get('location', {})
             current = weather_data.get('current', {})
             
+            # Weather emoji mapping
             condition_emojis = {
-                'sunny': '☀️', 'clear': '🌙', 'cloudy': '☁️',
-                'rain': '🌧', 'thunder': '⚡', 'fog': '🌫'
+                'sunny': '☀️',
+                'clear': '🌙',
+                'cloudy': '☁️',
+                'overcast': '☁️',
+                'rain': '🌧',
+                'light rain': '🌦',
+                'heavy rain': '⛈',
+                'thunder': '⚡',
+                'fog': '🌫',
+                'mist': '🌫',
+                'drizzle': '🌧'
             }
             
+            # Get appropriate emoji
             condition_text = current.get('condition', {}).get('text', '').lower()
-            emoji = next((v for k,v in condition_emojis.items() if k in condition_text), '🌤')
+            emoji = '🌤'  # Default
+            for key, value in condition_emojis.items():
+                if key in condition_text:
+                    emoji = value
+                    break
             
             response = (
-                f"{emoji} <b>Weather for {location.get('name', 'Unknown')}</b>\n"
+                f"{emoji} <b>Weather for {location.get('name', 'Unknown')}, {location.get('region', 'Unknown')}</b>\n"
                 f"📍 <i>Coordinates:</i> {location.get('coordinates', {}).get('latitude', '?')}°N, "
                 f"{location.get('coordinates', {}).get('longitude', '?')}°E\n"
-                f"🌡 <b>Current:</b> {current.get('temperature', {}).get('celsius', '?')}°C\n"
-                f"💨 <i>Wind:</i> {current.get('wind', {}).get('speed', {}).get('kph', '?')} km/h\n"
+                f"🕒 <i>Local time:</i> {location.get('localTime', 'Unknown')}\n\n"
+                
+                f"🌡 <b>Current:</b> {current.get('temperature', {}).get('celsius', '?')}°C "
+                f"(Feels like {current.get('feelsLike', {}).get('celsius', '?')}°C)\n"
+                f"{emoji} <i>Condition:</i> {current.get('condition', {}).get('text', 'Unknown')}\n"
+                f"💨 <i>Wind:</i> {current.get('wind', {}).get('speed', {}).get('kph', '?')} km/h "
+                f"from {current.get('wind', {}).get('direction', '?')}\n"
                 f"💧 <i>Humidity:</i> {current.get('humidity', '?')}%\n"
+                f"🌫 <i>Visibility:</i> {current.get('visibility', {}).get('km', '?')} km\n"
+                f"☔ <i>Precipitation:</i> {current.get('precipitation', {}).get('mm', '0')} mm\n"
             )
             
-            if 'forecast' in weather_data and weather_data['forecast']:
+            # Add forecast if available
+            if 'forecast' in weather_data and len(weather_data['forecast']) > 0:
                 today = weather_data['forecast'][0]['day']
                 response += (
-                    f"\n📅 <b>Forecast:</b>\n"
+                    f"\n📅 <b>Today's Forecast:</b>\n"
                     f"⬆️ <i>High:</i> {today.get('maxTemp', {}).get('celsius', '?')}°C\n"
                     f"⬇️ <i>Low:</i> {today.get('minTemp', {}).get('celsius', '?')}°C\n"
+                    f"🌧 <i>Rain chance:</i> {today.get('chanceOfRain', '0')}%\n"
+                    f"☀️ <i>UV Index:</i> {today.get('uvIndex', '?')}\n"
                 )
             
             return response
+            
         except Exception as e:
-            print(f"Weather formatting error: {e}")
-            return "⚠️ Could not format weather data"
-
-    def get_response(self, user_input: str) -> str:
-        """Get AI response with conversation history"""
-        developer_keywords = [
-            'who develop you', 'who created you', 
-            'who made you', 'who programmed you'
-        ]
-        if any(k in user_input.lower() for k in developer_keywords):
+            print(f"Error formatting weather response: {e}")
+            return "Could not format weather data. Please try again later."
+    
+    def get_response(self, user_input):
+        # Check for developer-related questions first
+        developer_keywords = ['who develop you', 'who developed you', 'who is your developer', 'Who created you', 'who made you', 'who made you', 'who created you', 'who built you', 'who programmed you']
+        if any(keyword in user_input.lower() for keyword in developer_keywords):
             return self.developer_info + self.watermark
             
-        self.conversation_history.append({"role": "user", "content": user_input})
+        self.conversation_history.append({
+            "role": "user",
+            "content": user_input
+        })
+        
+        data = {
+            "model": self.model,
+            "messages": self.conversation_history,
+            "temperature": 0.7
+        }
         
         try:
-            encoded_input = urllib.parse.quote(user_input)
-            api_url = f"{self.API_URL}?text={encoded_input}&thinking_enabled=false&search_enabled=false"
-            
-            response = requests.get(  # Changed to GET request
-                api_url,
-                headers=self.headers,
-                timeout=self.timeout/1000
-            )
+            response = requests.post(self.API_URL, json=data, headers=self.headers, timeout=120)
             response.raise_for_status()
             
-            response_data = response.json()
-            if response_data.get('ok', False):
-                ai_response = response_data.get('message', '')
-                self.conversation_history.append({"role": "assistant", "content": ai_response})
+            result = response.json()
+            if 'choices' in result and len(result['choices']) > 0:
+                ai_response = result['choices'][0]['message']['content']
+                self.conversation_history.append({
+                    "role": "assistant",
+                    "content": ai_response
+                })
                 
-                # Replace branding if needed
+                ai_response = ai_response.replace('OpenAI', 'M.H.M AI')
                 ai_response = ai_response.replace('DeepSeek', 'M.H.M AI')
+                ai_response = ai_response.replace('organization based in the United States', 'organization based in Myanmar')
+                ai_response = ai_response.replace('```', '`')
+                ai_response = ai_response.replace('developed by M.H.M AI', 'developed by a Grade 11 Student In Myanmar')
+                ai_response = ai_response.replace('based in San Francisco, California', 'based in Magway, Pakokku Distinct')
                 return ai_response + self.watermark
-            return "Error: No valid response from AI" + self.watermark
+            return "Error: No response from AI" + self.watermark
+            
         except requests.exceptions.RequestException as e:
-            # Return a friendly message if the API fails
-            if "hello" in user_input.lower():
-                return "Hello! 😊 How can I help you today?" + self.watermark
-            return f"I'm having trouble connecting to my servers. Please try again later." + self.watermark
+            return f"API Error: {str(e)}" + self.watermark
 
-# Telegram Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
+    welcome_text = (
         "👋 Welcome to M.H.M AI Bot!\n\n"
-        "I'm an AI assistant with conversation memory.\n\n"
-        "<b>Commands:</b>\n"
-        "/start - Show this message\n"
-        "/weather [location] - Get weather\n"
-        "/clear - Reset conversation\n"
-        "/developer - About my creator",
-        parse_mode='HTML'
+        "I'm an AI assistant that remembers our conversation history.\n"
+        "Ask me anything or get weather forecasts for Myanmar locations!\n\n"
+        "<b>Available commands:</b>\n"
+        "/start - Show this welcome message\n"
+        "/help - Show help information\n"
+        "/clear - Clear our conversation history\n"
+        "/developer - Learn about my creator\n"
+        "/weather [location] - Get weather forecast (e.g. /weather Yangon)\n\n"
+        "Just type your message to chat with me!"
     )
+    await update.message.reply_text(welcome_text, parse_mode='HTML')
         
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    help_text = (
+        "ℹ️ <b>M.H.M AI Bot Help</b>\n\n"
+        "I maintain context of our conversation and can remember what we've discussed.\n\n"
+        "<b>Commands:</b>\n"
+        "/start - Show welcome message\n"
+        "/help - Show this help message\n"
+        "/clear - Reset our conversation\n"
+        "/developer - Learn about my creator\n"
+        "/weather [location] - Get weather forecast\n\n"
+        "Try asking me questions or get weather with '/weather Yangon'"
+    )
+    await update.message.reply_text(help_text, parse_mode='HTML')
+        
+async def clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data['conversation_history'] = []
+    await update.message.reply_text("🧹 Conversation history cleared! Let's start fresh.")
+
+async def developer_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if 'mhm_ai' not in context.chat_data:
+        context.chat_data['mhm_ai'] = MHMAI()
+    mhm_ai = context.chat_data['mhm_ai']
+    await update.message.reply_text(mhm_ai.developer_info + mhm_ai.watermark)
+
 async def weather_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /weather command to show weather for a location."""
     if not context.args:
-        await update.message.reply_text("Please specify a location in Myanmar")
+        await update.message.reply_text(
+            "Please specify a location in Myanmar. Example: <code>/weather Yangon</code> or <code>/weather Mandalay</code>",
+            parse_mode='HTML'
+        )
         return
     
     location = ' '.join(context.args)
@@ -173,47 +242,60 @@ async def weather_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.chat_data['mhm_ai'] = MHMAI()
     
     mhm_ai = context.chat_data['mhm_ai']
-    coords = mhm_ai.get_location_coordinates(location)
     
+    # Get coordinates using the coordinates API
+    coords = mhm_ai.get_location_coordinates(location)
     if not coords:
-        await update.message.reply_text(f"❌ Location not found: {location}")
+        await update.message.reply_text(
+            f"❌ Could not find coordinates for <b>{location}</b>. Please try another location in Myanmar.",
+            parse_mode='HTML'
+        )
         return
     
-    weather_data = mhm_ai.get_weather_data(*coords)
-    if weather_data:
-        response = mhm_ai.format_weather_response(weather_data)
-        await update.message.reply_text(response + mhm_ai.watermark, parse_mode='HTML')
-    else:
-        await update.message.reply_text("⚠️ Could not fetch weather data")
-
+    lat, lon = coords
+    weather_data = mhm_ai.get_weather_data(lat, lon)
+    
+    if not weather_data:
+        await update.message.reply_text(
+            f"❌ Could not fetch weather data for <b>{location}</b>. Please try again later.",
+            parse_mode='HTML'
+        )
+        return
+    
+    # Format and send the weather response
+    response = mhm_ai.format_weather_response(weather_data)
+    await update.message.reply_text(response + mhm_ai.watermark, parse_mode='HTML')
+        
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_input = update.message.text
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+    
+    # Get or initialize conversation history for this chat
     if 'mhm_ai' not in context.chat_data:
         context.chat_data['mhm_ai'] = MHMAI()
     
     mhm_ai = context.chat_data['mhm_ai']
-    response = mhm_ai.get_response(update.message.text)
+    response = mhm_ai.get_response(user_input)
     await update.message.reply_text(response)
 
 def main():
-    TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not TELEGRAM_TOKEN:
-        raise ValueError("Missing TELEGRAM_BOT_TOKEN environment variable")
+    # Your Telegram Bot Token
+    TELEGRAM_TOKEN = "8188504693:AAHXhSos3hDfHn-t6iq3acxiC0LEZYA5pOs"
     
+    print("Starting M.H.M AI Telegram Bot...")
+    
+    # Create the Application
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
-    # Handlers
-    handlers = [
-        CommandHandler("start", start),
-        CommandHandler("weather", weather_command),
-        CommandHandler("clear", lambda u,c: c.chat_data.clear()),
-        CommandHandler("developer", lambda u,c: u.message.reply_text(MHMAI().developer_info)),
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
-    ]
+    # Add handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("clear", clear_memory))
+    application.add_handler(CommandHandler("developer", developer_info))
+    application.add_handler(CommandHandler("weather", weather_command))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    for handler in handlers:
-        application.add_handler(handler)
-    
-    print("Bot is running...")
+    # Run the bot
     application.run_polling()
 
 if __name__ == "__main__":
