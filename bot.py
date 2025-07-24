@@ -13,13 +13,12 @@ class MHMAI:
             'Authorization': f'Bearer sk-paxsenix-45-dpDQ7eXYt8esnLxDyjFLV0X1XOWWrV218mhTqMEcdJW1J',
             'Content-Type': 'application/json'
         }
-        
         self.watermark = " [This response is fully powered by M.H.M AI]"
         self.conversation_history = []
         self.developer_info = "The developer of this AI is a Grade 11 student from Myanmar."
         self.weather_api_url = "https://weather-forcast.moewaiyankyaw353.workers.dev/"
+        self.timeout = 6000  # 6 seconds timeout
         self.setup_system_prompt()
-        self.timeout = 60000  # 6000ms timeout
     
     def setup_system_prompt(self):
         system_prompt = {
@@ -127,10 +126,10 @@ class MHMAI:
             encoded_input = urllib.parse.quote(user_input)
             api_url = f"{self.API_URL}?text={encoded_input}&thinking_enabled=false&search_enabled=false"
             
-            response = requests.post(
+            response = requests.get(  # Changed to GET request
                 api_url,
                 headers=self.headers,
-                timeout=self.timeout/1000  # Convert to seconds
+                timeout=self.timeout/1000
             )
             response.raise_for_status()
             
@@ -139,19 +138,15 @@ class MHMAI:
                 ai_response = response_data.get('message', '')
                 self.conversation_history.append({"role": "assistant", "content": ai_response})
                 
-                # Replace branding
-                replacements = {
-                    'OpenAI': 'M.H.M AI',
-                    'DeepSeek': 'M.H.M AI',
-                    'San Francisco': 'Magway, Pakokku'
-                }
-                for old, new in replacements.items():
-                    ai_response = ai_response.replace(old, new)
-                    
+                # Replace branding if needed
+                ai_response = ai_response.replace('DeepSeek', 'M.H.M AI')
                 return ai_response + self.watermark
-            return "Error: No response from AI" + self.watermark
+            return "Error: No valid response from AI" + self.watermark
         except requests.exceptions.RequestException as e:
-            return f"API Error: {str(e)}" + self.watermark
+            # Return a friendly message if the API fails
+            if "hello" in user_input.lower():
+                return "Hello! 😊 How can I help you today?" + self.watermark
+            return f"I'm having trouble connecting to my servers. Please try again later." + self.watermark
 
 # Telegram Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
