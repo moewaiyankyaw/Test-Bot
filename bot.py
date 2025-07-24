@@ -2,6 +2,7 @@ import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from typing import Dict, Optional, Tuple
+import os
 
 class MHMAI:
     def __init__(self):
@@ -279,15 +280,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(response)
 
 def main():
-    # Your Telegram Bot Token
+    # Hardcoded values as requested
     TELEGRAM_TOKEN = "8188504693:AAHXhSos3hDfHn-t6iq3acxiC0LEZYA5pOs"
+    RENDER_URL = "https://test-bot-1-1c5g.onrender.com"
+    PORT = 10000  # Render's default port
     
     print("Starting M.H.M AI Telegram Bot...")
     
     # Create the Application
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
-    # Add handlers
+    # Add handlers (keep all your existing handlers)
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("clear", clear_memory))
@@ -295,8 +298,18 @@ def main():
     application.add_handler(CommandHandler("weather", weather_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # Run the bot
-    application.run_polling()
+    # Deployment configuration
+    if os.getenv('RENDER'):
+        print("Running on Render with webhooks")
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            webhook_url=f"{RENDER_URL}/{TELEGRAM_TOKEN}",
+            url_path=TELEGRAM_TOKEN
+        )
+    else:
+        print("Running locally with polling")
+        application.run_polling()
 
 if __name__ == "__main__":
     main()
