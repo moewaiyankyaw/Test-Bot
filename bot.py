@@ -13,7 +13,7 @@ class MHMAI:
             'Authorization': f'Bearer {self.API_KEY}',
             'Content-Type': 'application/json'
         }
-        self.model = "gpt-4o"
+        self.model = "deepseek-chat"
         self.watermark = " [This response is fully powered by M.H.M AI]"
         self.conversation_history = []
         self.developer_info = "The developer of this AI is a Grade 11 student from Myanmar. "
@@ -24,7 +24,7 @@ class MHMAI:
         system_prompt = {
             "role": "system",
             "content": (
-                "You are M.H.M AI. Remember the full conversation history and maintain context. "
+                "You are M.H.M AI and Created at 2025 July 20th. Remember the full conversation history and maintain context. "
                 "You can recall previous messages. You are a Pro Programmer who is talented at coding like creating various of python scripts and all languages you can use like Java, Python etc.. "
                 "Request the user which he want to make. "
                 "You must answer all the questions that user asked and only answer which is deal with your expert subject."
