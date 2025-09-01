@@ -37,10 +37,10 @@ class MHMAI:
         try:
             # Prepare the API request
             text = (
-                f"မြန်မာနိုင်ငံရှိ '{location_name}' အတွက် တိကျတဲ့ latitude နှင့် longitude coordinates များကိုရှာပါ။ "
-                "တုံ့ပြန်မှုကို 'latitude,longitude' format ဖြင့် ဒဿမ ၆ နေရာအထိ အတိအကျဖြင့်သာတုံ့ပြန်ပါ။ "
-                "ဥပမာ: ရန်ကုန်အတွက် '16.840939,96.173527'။ "
-                "တည်နေရာကိုရှာမတွေ့ပါက သို့မဟုတ် မြန်မာနိုင်ငံမှမဟုတ်ပါက 'None' ဟုတုံ့ပြန်ပါ။"
+                f"Find the precise latitude and longitude coordinates for '{location_name}' in Myanmar. "
+                "Respond ONLY with the coordinates in the format 'latitude,longitude' with exactly 6 decimal places. "
+                "Example: '16.840939,96.173527' for Yangon. "
+                "If the location cannot be found or is not in Myanmar, respond with 'None'."
             )
             
             # URL encode the text
@@ -48,7 +48,7 @@ class MHMAI:
             encoded_text = urllib.parse.quote(text)
             url = f"{self.COORDINATES_API_URL}?text={encoded_text}"
             
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=1000000)
             response.raise_for_status()
             
             result = response.json()
@@ -77,7 +77,7 @@ class MHMAI:
         """Fetch weather data from the API."""
         try:
             url = f"{self.weather_api_url}?lat={lat}&lon={lon}&days={days}"
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=1000000)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -172,7 +172,7 @@ class MHMAI:
         }
         
         try:
-            response = requests.post(self.API_URL, json=data, headers=self.headers, timeout=120)
+            response = requests.post(self.API_URL, json=data, headers=self.headers, timeout=1000000)
             response.raise_for_status()
             
             result = response.json()
