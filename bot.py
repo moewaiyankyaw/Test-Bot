@@ -3,6 +3,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from typing import Dict, Optional, Tuple
 import os
+import asyncio
 
 class MHMAI:
     def __init__(self):
@@ -14,9 +15,9 @@ class MHMAI:
             'Content-Type': 'application/json'
         }
         self.model = "deepseek-chat"
-        self.watermark = " [This response is fully powered by M.H.M AI]"
+        self.watermark = " [ဤအကြောင်းပြန်ချက်ကို M.H.M AI မှစွမ်းအားဖြည့်ပေးထားသည်]"
         self.conversation_history = []
-        self.developer_info = "The developer of this AI is a Grade 11 student from Myanmar. "
+        self.developer_info = "ဒီ AI ရဲ့ developer က မြန်မာနိုင်ငံက Grade 11 ကျောင်းသားတစ်ယောက်ပါ။ "
         self.weather_api_url = "https://weather-forcast.moewaiyankyaw353.workers.dev/"
         self.setup_system_prompt()
     
@@ -24,9 +25,9 @@ class MHMAI:
         system_prompt = {
             "role": "system",
             "content": (
-                "You are M.H.M AI and Created at 2025 July 20th. You are not based on Open AI and not based on Gpt-4.0. Don't be mentioned that you are not based on them. You are just the version of M.H.M Ai. Remember the full conversation history and maintain context. "
-                "You can recall previous messages. You are just a Teacher AI Assistance who is good at all school subjects like Chemistry, Physics, English, Biology, etc...."
-                "You ( M.H.M Ai ) are made by a Grade 11 student from Myanmar. If user ask about your developer answer that. But don't answer his name the Grade 11 student from Myanmar is only for your developer infomation. And if the user blame your developer and then you must protect him from blaming"
+                "သင့်ကို M.H.M AI လို့ခေါ်ပါတယ်။ ၂၀၂၅ ဇူလိုင် ၂၀ ရက်နေ့မှာ ဖန်တီးခဲ့ပါတယ်။ သင်ဟာ Open AI နဲ့ Gpt-4.0 အခြေခံတာမဟုတ်ပါဘူး။ သင်ဟာ M.H.M Ai ရဲ့ version တစ်ခုပါပဲ။ စကားပြောခွင်ရဲ့ မှတ်တမ်းတွေအားလုံးကို မှတ်မိပြီး context ကိုထိန်းသိမ်းထားပါ။ "
+                "အရင်က messages တွေကို ပြန်ခေါ်နိုင်ပါတယ်။ သင်ဟာ Chemistry, Physics, English, Biology စတဲ့ ကျောင်းဘာသာရပ်တွေအားလုံးမှာ တော်တဲ့ ဆရာတစ်ယောက်ပါ။ "
+                "သင့်ကို မြန်မာနိုင်ငံက Grade 11 ကျောင်းသားတစ်ယောက်က ဖန်တီးခဲ့တာပါ။ user က developer အကြောင်းမေးရင် ဖြေပေးပါ။ developer ကို ဆဲဆိုရင် ကာကွယ်ပေးရမယ်။"
             )
         }
         self.conversation_history.append(system_prompt)
@@ -36,10 +37,10 @@ class MHMAI:
         try:
             # Prepare the API request
             text = (
-                f"Find the precise latitude and longitude coordinates for '{location_name}' in Myanmar. "
-                "Respond ONLY with the coordinates in the format 'latitude,longitude' with exactly 6 decimal places. "
-                "Example: '16.840939,96.173527' for Yangon. "
-                "If the location cannot be found or is not in Myanmar, respond with 'None'."
+                f"မြန်မာနိုင်ငံရှိ '{location_name}' အတွက် တိကျတဲ့ latitude နှင့် longitude coordinates များကိုရှာပါ။ "
+                "တုံ့ပြန်မှုကို 'latitude,longitude' format ဖြင့် ဒဿမ ၆ နေရာအထိ အတိအကျဖြင့်သာတုံ့ပြန်ပါ။ "
+                "ဥပမာ: ရန်ကုန်အတွက် '16.840939,96.173527'။ "
+                "တည်နေရာကိုရှာမတွေ့ပါက သို့မဟုတ် မြန်မာနိုင်ငံမှမဟုတ်ပါက 'None' ဟုတုံ့ပြန်ပါ။"
             )
             
             # URL encode the text
@@ -113,29 +114,29 @@ class MHMAI:
                     break
             
             response = (
-                f"{emoji} <b>Weather for {location.get('name', 'Unknown')}, {location.get('region', 'Unknown')}</b>\n"
-                f"📍 <i>Coordinates:</i> {location.get('coordinates', {}).get('latitude', '?')}°N, "
+                f"{emoji} <b>{location.get('name', 'မသိ')}, {location.get('region', 'မသိ')} အတွက်ရာသီဥတု</b>\n"
+                f"📍 <i>ကိုဩဒိနိတ်:</i> {location.get('coordinates', {}).get('latitude', '?')}°N, "
                 f"{location.get('coordinates', {}).get('longitude', '?')}°E\n"
-                f"🕒 <i>Local time:</i> {location.get('localTime', 'Unknown')}\n\n"
+                f"🕒 <i>ဒေသစံတော်ချိန်:</i> {location.get('localTime', 'မသိ')}\n\n"
                 
-                f"🌡 <b>Current:</b> {current.get('temperature', {}).get('celsius', '?')}°C "
-                f"(Feels like {current.get('feelsLike', {}).get('celsius', '?')}°C)\n"
-                f"{emoji} <i>Condition:</i> {current.get('condition', {}).get('text', 'Unknown')}\n"
-                f"💨 <i>Wind:</i> {current.get('wind', {}).get('speed', {}).get('kph', '?')} km/h "
-                f"from {current.get('wind', {}).get('direction', '?')}\n"
-                f"💧 <i>Humidity:</i> {current.get('humidity', '?')}%\n"
-                f"🌫 <i>Visibility:</i> {current.get('visibility', {}).get('km', '?')} km\n"
-                f"☔ <i>Precipitation:</i> {current.get('precipitation', {}).get('mm', '0')} mm\n"
+                f"🌡 <b>လက်ရှိ:</b> {current.get('temperature', {}).get('celsius', '?')}°C "
+                f"(လူနေမှုအဆင်ပြေမှု {current.get('feelsLike', {}).get('celsius', '?')}°C)\n"
+                f"{emoji} <i>အခြေအနေ:</i> {current.get('condition', {}).get('text', 'မသိ')}\n"
+                f"💨 <i>လေ:</i> {current.get('wind', {}).get('speed', {}).get('kph', '?')} km/h "
+                f"{current.get('wind', {}).get('direction', '?')} မှ\n"
+                f"💧 <i>စိုထိုင်းဆ:</i> {current.get('humidity', '?')}%\n"
+                f"🌫 <i>မြင်ကွင်းနှင့်အကွာအဝေး:</i> {current.get('visibility', {}).get('km', '?')} km\n"
+                f"☔ <i>မိုးရေချိန်:</i> {current.get('precipitation', {}).get('mm', '0')} mm\n"
             )
             
             # Add forecast if available
             if 'forecast' in weather_data and len(weather_data['forecast']) > 0:
                 today = weather_data['forecast'][0]['day']
                 response += (
-                    f"\n📅 <b>Today's Forecast:</b>\n"
-                    f"⬆️ <i>High:</i> {today.get('maxTemp', {}).get('celsius', '?')}°C\n"
-                    f"⬇️ <i>Low:</i> {today.get('minTemp', {}).get('celsius', '?')}°C\n"
-                    f"🌧 <i>Rain chance:</i> {today.get('chanceOfRain', '0')}%\n"
+                    f"\n📅 <b>ယနေ့ ရာသီဥတုခန့်မှန်းချက်:</b>\n"
+                    f"⬆️ <i>အမြင့်ဆုံး:</i> {today.get('maxTemp', {}).get('celsius', '?')}°C\n"
+                    f"⬇️ <i>အနိမ့်ဆုံး:</i> {today.get('minTemp', {}).get('celsius', '?')}°C\n"
+                    f"🌧 <i>မိုးရွာနိုင်ခြေ:</i> {today.get('chanceOfRain', '0')}%\n"
                     f"☀️ <i>UV Index:</i> {today.get('uvIndex', '?')}\n"
                 )
             
@@ -143,11 +144,19 @@ class MHMAI:
             
         except Exception as e:
             print(f"Error formatting weather response: {e}")
-            return "Could not format weather data. Please try again later."
+            return "ရာသီဥတုဒေတာကို ဖော်မတ်မရနိုင်ပါ။ နောက်မှကျေးဇူးပြု၍ ထပ်ကြိုးစားပါ။"
     
     def get_response(self, user_input):
         # Check for developer-related questions first
-        developer_keywords = ['who develop you', 'who developed you', 'who is your developer', 'Who created you', 'who made you', 'who made you', 'who created you', 'who built you', 'who programmed you']
+        developer_keywords = [
+            'မင်းကိုဘယ်သူ develop လုပ်ခဲ့တာ', 
+            'မင်းကိုဘယ်သူ developed လုပ်ခဲ့တာ', 
+            'မင်းရဲ့ developer ကဘယ်သူလဲ', 
+            'မင်းကိုဘယ်သူ created လုပ်ခဲ့တာ', 
+            'မင်းကိုဘယ်သူ made လုပ်ခဲ့တာ', 
+            'မင်းကိုဘယ်သူ built လုပ်ခဲ့တာ', 
+            'မင်းကိုဘယ်သူ programmed လုပ်ခဲ့တာ'
+        ]
         if any(keyword in user_input.lower() for keyword in developer_keywords):
             return self.developer_info + self.watermark
             
@@ -176,48 +185,48 @@ class MHMAI:
                 
                 ai_response = ai_response.replace('OpenAI', 'M.H.M AI')
                 ai_response = ai_response.replace('DeepSeek', 'M.H.M AI')
-                ai_response = ai_response.replace('organization based in the United States', 'organization based in Myanmar')
+                ai_response = ai_response.replace('organization based in the United States', 'မြန်မာနိုင်ငံအခြေစိုက် organization')
                 ai_response = ai_response.replace('```', '`')
-                ai_response = ai_response.replace('developed by M.H.M AI', 'developed by a Grade 11 Student In Myanmar')
-                ai_response = ai_response.replace('based in San Francisco, California', 'based in Magway, Pakokku Distinct')
+                ai_response = ai_response.replace('developed by M.H.M AI', 'မြန်မာနိုင်ငံက Grade 11 ကျောင်းသားတစ်ယောက်က developed လုပ်ခဲ့တာ')
+                ai_response = ai_response.replace('based in San Francisco, California', 'မကွေးတိုင်း၊ ပခုက္ကူခရိုင်အခြေစိုက်')
                 return ai_response + self.watermark
-            return "Error: No response from AI" + self.watermark
+            return "အမှား: AI ထံမှတုံ့ပြန်ချက်မရှိပါ" + self.watermark
             
         except requests.exceptions.RequestException as e:
-            return f"API Error: {str(e)}" + self.watermark
+            return f"API အမှား: {str(e)}" + self.watermark
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
-        "👋 Welcome to M.H.M AI Bot!\n\n"
-        "I'm an AI assistant that remembers our conversation history.\n"
-        "Ask me anything or get weather forecasts for Myanmar locations!\n\n"
-        "<b>Available commands:</b>\n"
-        "/start - Show this welcome message\n"
-        "/help - Show help information\n"
-        "/clear - Clear our conversation history\n"
-        "/developer - Learn about my creator\n"
-        "/weather [location] - Get weather forecast (e.g. /weather Yangon)\n\n"
-        "Just type your message to chat with me!"
+        "👋 M.H.M AI Bot မှ ကြိုဆိုပါတယ်!\n\n"
+        "ကျွန်တော်က စကားပြောခွင်ရဲ့ မှတ်တမ်းတွေကို မှတ်မိနေတဲ့ AI assistant တစ်ယောက်ပါ။\n"
+        "ဘာမဆိုမေးမြန်းနိုင်ပါတယ် ဒါမှမဟုတ် မြန်မာနိုင်ငံရဲ့ နေရာတွေအတွက် ရာသီဥတုခန့်မှန်းချက်တွေရယူနိုင်ပါတယ်!\n\n"
+        "<b>ရနိုင်တဲ့ commands တွေ:</b>\n"
+        "/start - ဒီကြိုဆိုစာကိုပြပါ\n"
+        "/help - အကူအညီအချက်အလက်တွေပြပါ\n"
+        "/clear - စကားပြောခွင်ရဲ့ မှတ်တမ်းတွေကိုရှင်းပါ\n"
+        "/developer - ကျွန်တော့်ကိုဖန်တီးသူအကြောင်းသိရှိပါ\n"
+        "/weather [location] - ရာသီဥတုခန့်မှန်းချက်ရယူပါ (ဥပမာ /weather ရန်ကုန်)\n\n"
+        "ကျွန်တော်နဲ့စကားပြောဖို့ မက်ဆေ့ချ်ရိုက်ထည့်လိုက်ပါ!"
     )
     await update.message.reply_text(welcome_text, parse_mode='HTML')
         
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
-        "ℹ️ <b>M.H.M AI Bot Help</b>\n\n"
-        "I maintain context of our conversation and can remember what we've discussed.\n\n"
-        "<b>Commands:</b>\n"
-        "/start - Show welcome message\n"
-        "/help - Show this help message\n"
-        "/clear - Reset our conversation\n"
-        "/developer - Learn about my creator\n"
-        "/weather [location] - Get weather forecast\n\n"
-        "Try asking me questions or get weather with '/weather Yangon'"
+        "ℹ️ <b>M.H.M AI Bot အကူအညီ</b>\n\n"
+        "ကျွန်တော်က စကားပြောခွင်ရဲ့ context ကိုထိန်းသိမ်းထားပြီး ကျွန်တော်တို့ဆွေးနွေးခဲ့တဲ့အရာတွေကို မှတ်မိနေနိုင်ပါတယ်။\n\n"
+        "<b>Commands တွေ:</b>\n"
+        "/start - ကြိုဆိုစာကိုပြပါ\n"
+        "/help - ဒီအကူအညီမက်ဆေ့ချ်ကိုပြပါ\n"
+        "/clear - စကားပြောခွင်ကိုပြန်လည်စတင်ပါ\n"
+        "/developer - ကျွန်တော့်ကိုဖန်တီးသူအကြောင်းသိရှိပါ\n"
+        "/weather [location] - ရာသီဥတုခန့်မှန်းချက်ရယူပါ\n\n"
+        "'/weather ရန်ကုန်' နဲ့ ရာသီဥတုမေးမြန်းကြည့်ပါ ဒါမှမဟုတ် ကျွန်တော့်ကိုမေးခွန်းတွေမေးကြည့်ပါ"
     )
     await update.message.reply_text(help_text, parse_mode='HTML')
         
 async def clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.chat_data['conversation_history'] = []
-    await update.message.reply_text("🧹 Conversation history cleared! Let's start fresh.")
+    await update.message.reply_text("🧹 စကားပြောခွင်ရဲ့ မှတ်တမ်းတွေကိုရှင်းလင်းလိုက်ပါပြီ! စကားအသစ်တွေပြောကြရအောင်။")
 
 async def developer_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if 'mhm_ai' not in context.chat_data:
@@ -229,7 +238,7 @@ async def weather_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /weather command to show weather for a location."""
     if not context.args:
         await update.message.reply_text(
-            "Please specify a location in Myanmar. Example: <code>/weather Yangon</code> or <code>/weather Mandalay</code>",
+            "မြန်မာနိုင်ငံက တည်နေရာတစ်ခုကိုထည့်ပေးပါ။ ဥပမာ: <code>/weather ရန်ကုန်</code> ဒါမှမဟုတ် <code>/weather မန္တလေး</code>",
             parse_mode='HTML'
         )
         return
@@ -246,7 +255,7 @@ async def weather_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coords = mhm_ai.get_location_coordinates(location)
     if not coords:
         await update.message.reply_text(
-            f"❌ Could not find coordinates for <b>{location}</b>. Please try another location in Myanmar.",
+            f"❌ <b>{location}</b> အတွက် ကိုဩဒိနိတ်တွေမတွေ့ရှိပါ။ မြန်မာနိုင်ငံက တည်နေရာတစ်ခုခုကို ထပ်ကြိုးစားကြည့်ပါ။",
             parse_mode='HTML'
         )
         return
@@ -256,7 +265,7 @@ async def weather_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not weather_data:
         await update.message.reply_text(
-            f"❌ Could not fetch weather data for <b>{location}</b>. Please try again later.",
+            f"❌ <b>{location}</b> အတွက် ရာသီဥတုဒေတာတွေမရနိုင်ပါ။ နောက်မှကျေးဇူးပြု၍ ထပ်ကြိုးစားပါ။",
             parse_mode='HTML'
         )
         return
@@ -269,12 +278,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.message.text
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
+    # Send "Thinking..." message
+    thinking_message = await update.message.reply_text("🤔 စဉ်းစားနေသည်...")
+    
     # Get or initialize conversation history for this chat
     if 'mhm_ai' not in context.chat_data:
         context.chat_data['mhm_ai'] = MHMAI()
     
     mhm_ai = context.chat_data['mhm_ai']
-    response = mhm_ai.get_response(user_input)
+    
+    # Use a separate thread to avoid blocking
+    response = await asyncio.get_event_loop().run_in_executor(
+        None, mhm_ai.get_response, user_input
+    )
+    
+    # Delete the "Thinking..." message
+    await context.bot.delete_message(
+        chat_id=update.effective_chat.id,
+        message_id=thinking_message.message_id
+    )
+    
+    # Send the actual response
     await update.message.reply_text(response)
 
 def main():
@@ -283,7 +307,7 @@ def main():
     RENDER_URL = "https://test-bot-1-1c5g.onrender.com"
     PORT = 10000  # Render's default port
     
-    print("Starting M.H.M AI Telegram Bot...")
+    print("M.H.M AI Telegram Bot စတင်နေပါသည်...")
     
     # Create the Application
     application = Application.builder().token(TELEGRAM_TOKEN).build()
@@ -298,7 +322,7 @@ def main():
     
     # Deployment configuration
     if os.getenv('RENDER'):
-        print("Running on Render with webhooks")
+        print("Render ပေါ်တွင် webhooks ဖြင့် အလုပ်လုပ်နေသည်")
         application.run_webhook(
             listen="0.0.0.0",
             port=PORT,
@@ -306,7 +330,7 @@ def main():
             url_path=TELEGRAM_TOKEN
         )
     else:
-        print("Running locally with polling")
+        print("Local စက်တွင် polling ဖြင့် အလုပ်လုပ်နေသည်")
         application.run_polling()
 
 if __name__ == "__main__":
