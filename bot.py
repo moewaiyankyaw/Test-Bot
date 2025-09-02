@@ -14,7 +14,7 @@ class MHMAI:
             'Authorization': f'Bearer {self.API_KEY}',
             'Content-Type': 'application/json'
         }
-        self.model = "deepseek-chat"
+        self.model = "gemini-2.5-pro-exp-online"
         self.watermark = " [ဤအကြောင်းပြန်ချက်ကို M.H.M AI မှစွမ်းအားဖြည့်ပေးထားသည်]"
         self.conversation_history = []
         self.developer_info = "ဒီ AI ရဲ့ developer က မြန်မာနိုင်ငံက Grade 11 ကျောင်းသားတစ်ယောက်ပါ။ "
