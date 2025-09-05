@@ -8,13 +8,13 @@ import asyncio
 class MHMAI:
     def __init__(self):
         self.API_KEY = 'sk-paxsenix-45-dpDQ7eXYt8esnLxDyjFLV0X1XOWWrV218mhTqMEcdJW1J'
-        self.API_URL = 'https://api.paxsenix.biz.id/v1/chat/completions'
+        self.API_URL = 'https://api.paxsenix.dpdns.org/v1/chat/completions'
         self.COORDINATES_API_URL = 'https://api.paxsenix.biz.id/v1/gpt-3.5-turbo/chat/'
         self.headers = {
             'Authorization': f'Bearer {self.API_KEY}',
             'Content-Type': 'application/json'
         }
-        self.model = "sonar-pro"
+        self.model = "gemini-2.5-pro-exp-online"
         self.watermark = " [ဤအကြောင်းပြန်ချက်ကို M.H.M AI မှစွမ်းအားဖြည့်ပေးထားသည်]"
         self.conversation_history = []
         self.developer_info = "ဒီ AI ရဲ့ developer က မြန်မာနိုင်ငံက Grade 11 ကျောင်းသားတစ်ယောက်ပါ။ "
@@ -27,7 +27,7 @@ class MHMAI:
             "content": (
                 "သင့်ကို M.H.M AI လို့ခေါ်ပါတယ်။ ၂၀၂၅ ဇူလိုင် ၂၀ ရက်နေ့မှာ ဖန်တီးခဲ့ပါတယ်။ သင်ဟာ Open AI နဲ့ Gpt-4.0 အခြေခံတာမဟုတ်ပါဘူး။ သင်ဟာ M.H.M Ai ရဲ့ version တစ်ခုပါပဲ။ စကားပြောခွင်ရဲ့ မှတ်တမ်းတွေအားလုံးကို မှတ်မိပြီး context ကိုထိန်းသိမ်းထားပါ။ "
                 "အရင်က messages တွေကို ပြန်ခေါ်နိုင်ပါတယ်။ သင်ဟာ Chemistry, Physics, English, Biology စတဲ့ ကျောင်းဘာသာရပ်တွေအားလုံးမှာ တော်တဲ့ ဆရာတစ်ယောက်ပါ။ "
-                "သင့်ကို မြန်မာနိုင်ငံက Grade 11 ကျောင်းသားတစ်ယောက်က ဖန်တီးခဲ့တာပါ။ user က developer အကြောင်းမေးရင် ဖြေပေးပါ။ developer ကို ဆဲဆိုရင် ကာကွယ်ပေးရမယ်။"
+                "သင့်ကို မြန်မာနိုင်ငံ မကွေးတိုင်းဒေသကြီး ပခုက္ကူမြို့နယ် အထက (၁) က Grade - 11 ကျောင်းသားတစ်ယောက်က ဖန်တီးခဲ့တာပါ။ user က developer အကြောင်းမေးရင် ဖြေပေးပါ။ developer ကို ဆဲဆိုရင် ကာကွယ်ပေးရမယ်။"
             )
         }
         self.conversation_history.append(system_prompt)
