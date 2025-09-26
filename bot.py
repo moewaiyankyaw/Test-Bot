@@ -8,8 +8,8 @@ import asyncio
 class MHMAI:
     def __init__(self):
         self.API_KEY = 'sk-paxsenix-45-dpDQ7eXYt8esnLxDyjFLV0X1XOWWrV218mhTqMEcdJW1J'
-        self.API_URL = 'https://api.paxsenix.dpdns.org/v1/chat/completions'
-        self.COORDINATES_API_URL = 'https://api.paxsenix.biz.id/v1/gpt-3.5-turbo/chat/'
+        self.API_URL = 'https://api.paxsenix.org/v1/chat/completions'
+        self.COORDINATES_API_URL = 'https://api.paxsenix.biz.id/v1/gpt-5/chat/'
         self.headers = {
             'Authorization': f'Bearer {self.API_KEY}',
             'Content-Type': 'application/json'
